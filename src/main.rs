@@ -1,6 +1,12 @@
+// use std::os::unix::process;
+
 use sysinfo::{ProcessExt, DiskExt, System, SystemExt};
 use rusoto_core::{Region, RusotoError};
 use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, Dimension, MetricDatum, PutMetricDataInput, PutMetricDataError};
+use tokio::runtime::Runtime;
+use std::time::Instant;
+use tokio::time::{timeout, Duration, sleep};
+
 
 #[derive(Debug)]
 struct Disk {
@@ -73,6 +79,8 @@ async fn send_metric_to_cloudwatch(proc_status: &str, namespace: &str, metric_na
         metric_data: vec![datum],
     };
 
+    println!("Sending the following data to AWS CloudWatch: {:?}", put_metric_data_req);
+
     match client.put_metric_data(put_metric_data_req).await {
         Ok(_) => println!("Metric sent to CloudWatch successfully."),
         Err(e) => eprintln!("Failed to send metric to CloudWatch: {}", e),
@@ -81,6 +89,51 @@ async fn send_metric_to_cloudwatch(proc_status: &str, namespace: &str, metric_na
     Ok(())
 }
 
+
+async fn send_metrics(filter_string: &str) {
+    let sys = System::new_all();
+
+    let start = Instant::now();
+    for (_pid, proc_) in sys.processes().iter().filter(|(_, proc_)| proc_.name().to_lowercase().contains(filter_string)) {
+        let proc_status = format!("{:?}", proc_.status());
+
+        let mut retries = 0;
+        loop {
+            // Check if the total time exceeds 30 minutes, if yes break the loop
+            if start.elapsed().as_secs() > 30 * 60 {
+                break;
+            }
+
+            // Add timeout
+            let send_result = timeout(Duration::from_secs(10), send_metric_to_cloudwatch(&proc_status, "MyNamespace", filter_string)).await;
+
+            match send_result {
+                Ok(result) => match result {
+                    Ok(_) => break, // success, break the loop
+                    Err(e) => {
+                        eprintln!("Error when sending metric to CloudWatch: {:?}", e);
+                        retries += 1;
+                        if retries >= 3 { // if number of retries exceed 3, break the loop
+                            eprintln!("Failed to send metric after {} retries", retries);
+                            break;
+                        }
+                    },
+                },
+                Err(e) => {
+                    eprintln!("Timeout when sending metric to CloudWatch: {:?}", e);
+                    retries += 1;
+                    if retries >= 3 { // if number of retries exceed 3, break the loop
+                        eprintln!("Failed to send metric after {} retries", retries);
+                        break;
+                    }
+                },
+            }
+
+            // sleep for 1 second
+            sleep(Duration::from_secs(1)).await;
+        }
+    }
+}
 fn main() {
     let sys = System::new_all();
     let disks = parse_disk_data(&sys);
@@ -94,9 +147,8 @@ fn main() {
     }
     let filter_string = "chrome".to_lowercase();
 
-    for (pid, proc_) in sys.processes().iter().filter(|(_,proc_)| proc_.name().to_lowercase().contains(&filter_string)) {
-        println!("{}:{} => status: {:?}", pid, proc_.name(), proc_.status());
-        let proc_status = format!("{:?}", proc_.status());
-    let _ = send_metric_to_cloudwatch(&proc_status, "Rust", &filter_string);
-    }
-}
+    let rt = Runtime::new().unwrap();
+
+    rt.block_on(send_metrics(&filter_string));
+
+} // end of main
