@@ -6,3 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sysinfo = "0.29.7"
+rusoto_cloudwatch = "0.47.0"
+rusoto_core = "0.47.0"
