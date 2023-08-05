@@ -17,7 +17,7 @@ jobs:
     - name: Download Artifact
       uses: actions/download-artifact@v2
       with:
-        name: rust-monitor
+        name: rust-monitor-linux
 
     - name: Create Release
       id: create_release
@@ -37,6 +37,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./rust-monitor.tar.gz
-        asset_name: rust-monitor.tar.gz
+        asset_path: ./rust-monitor-linux.tar.gz
+        asset_name: rust-monitor-linux.tar.gz
         asset_content_type: application/gzip
