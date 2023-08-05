@@ -26,11 +26,21 @@ jobs:
         toolchain: stable
         override: true
 
-    - name: Build Linux
+    - name: Build Linux Release
+      id: linux_release
       uses: actions-rs/cargo@v1
       with:
         command: build 
         args: --verbose --release --target=x86_64-unknown-linux-gnu
+
+    - name: Create tar.gz
+      run: tar czvf ./target/x86_64-unknown-linux-gnu/release/rust-monitor-linux.tar.gz ./target/x86_64-unknown-linux-gnu/release/rust-monitor  
+
+    - name: Upload to Workflow Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: rust-monitor
+        path: ./target/release/rust-monitor.tar.gz     
 
     # - name: Run tests
     #   uses: actions-rs/cargo@v1
