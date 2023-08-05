@@ -19,17 +19,17 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libssl-dev    
 
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1.0.7
-      with:
-        toolchain: stable
-        override: true
+      uses: dtolnay/rust-toolchain@stable
 
-    - name: Build Linux Release
-      id: linux_release
-      uses: actions-rs/cargo@v1.0.3
-      with:
-        command: build 
-        args: --verbose --release --target=x86_64-unknown-linux-gnu
+    - name: run build
+      run: cargo --verbose --release --target=x86_64-unknown-linux-gnu
+
+    # - name: Build Linux Release
+    #   id: linux_release
+    #   uses: actions-rs/cargo@v1.0.3
+    #   with:
+    #     command: build 
+    #     args: 
 
     - name: Create tar.gz
       run: tar -czvf rust-monitor-linux.tar.gz -C ./target/x86_64-unknown-linux-gnu/release .
