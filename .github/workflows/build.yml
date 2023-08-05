@@ -35,7 +35,7 @@ jobs:
       run: tar -czvf rust-monitor-linux.tar.gz -C ./target/x86_64-unknown-linux-gnu/release .
 
     - name: Upload to Workflow Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3.1.2
       with:
         name: rust-monitor-linux
         path: ./rust-monitor-linux.tar.gz     
