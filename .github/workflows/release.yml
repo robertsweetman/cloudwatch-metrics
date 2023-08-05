@@ -1,42 +1,61 @@
-name: Release
+name: Publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version'     
-        required: true
-        default: '0.0.1' 
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [
+            linux,
+            windows
+        ]
+        include:
+          - name: linux
+            os: ubuntu-latest
+            artifact_name: target/release/<name>
+            asset_name: <name>-linux
+          - name: windows
+            os: windows-latest
+            artifact_name: target/release/<name>.exe
+            asset_name: <name>-windows
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v1
 
-    - name: Download Artifact
-      uses: actions/download-artifact@v2
+    - uses: actions-rs/toolchain@v1
       with:
-        name: rust-monitor-linux
+        profile: minimal
+        toolchain: stable
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.event.inputs.version }}
-        release_name: Release ${{ github.event.inputs.version }}
-        draft: false
-        prerelease: false
+    - name: Build
+      run: cargo build --release --locked
 
-    - name: Upload Release Asset
-      id: upload_release_asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload binaries to release
+      uses: actions/upload-artifact@v2
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./rust-monitor-linux.tar.gz
-        asset_name: rust-monitor-linux.tar.gz
-        asset_content_type: application/gzip
+        name: ${{ matrix.asset_name }}
+        path: ${{ matrix.artifact_name }}
+
+            # - name: Setup AWS Credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: eu-west-2
+
+    # - name: Upload Artifact to s3
+    #   working-directory: ${{ env.applicationfolder }}/target
+    #   run: aws s3 cp target/x86_64-unknown-linux-gnu/release/rust-monitor-linux.zip s3://${{ env.S3BUCKET }}/rust-monitor-linux.zip
+
+    # - name: Build Windows
+    #   uses: actions-rs/cargo@v1
+    #   with:
+    #     use-cross: true
+    #     command: build 
+    #     args: --verbose --release --target=x86_64-pc-windows-gnu
