@@ -22,7 +22,7 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
 
     - name: run build
-      run: cargo --verbose --release --target=x86_64-unknown-linux-gnu
+      run: cargo build --verbose --release --target=x86_64-unknown-linux-gnu
 
     # - name: Build Linux Release
     #   id: linux_release
