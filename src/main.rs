@@ -170,7 +170,10 @@ async fn send_metrics_with_retries(filter_string: &str, region: &str) -> Result<
     for (_pid, proc_) in sys.processes().iter().filter(|(_, proc_)| proc_.name().to_lowercase().contains(filter_string)) {
         let proc_status = format!("{:?}", proc_.status());
 
-        let client = CloudWatchClient::new(Region::region); // choose your AWS region
+        let client = CloudWatchClient::new(Region::Custom {
+            name: region.to_string(),
+            endpoint: format!("https://monitoring.{}.amazonaws.com", region)
+        }); // choose your AWS region
 
         let metric_value = if proc_status == "Run" { 0.0 } else { 1.0 };
 
