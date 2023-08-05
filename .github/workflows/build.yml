@@ -34,13 +34,13 @@ jobs:
         args: --verbose --release --target=x86_64-unknown-linux-gnu
 
     - name: Create tar.gz
-      run: tar czvf ./target/x86_64-unknown-linux-gnu/release/rust-monitor-linux.tar.gz ./target/x86_64-unknown-linux-gnu/release/rust-monitor  
+      run: tar czvf ./target/x86_64-unknown-linux-gnu/release/rust-monitor-linux.tar.gz ./target/x86_64-unknown-linux-gnu/release
 
     - name: Upload to Workflow Artifact
       uses: actions/upload-artifact@v2
       with:
         name: rust-monitor
-        path: ./target/release/rust-monitor.tar.gz     
+        path: ./target/x86_64-unknown-linux-gnu/release/rust-monitor-linux.tar.gz     
 
     # - name: Run tests
     #   uses: actions-rs/cargo@v1
