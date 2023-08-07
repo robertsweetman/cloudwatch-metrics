@@ -1,8 +1,8 @@
 // use std::os::unix::process;
 
-use sysinfo::{ProcessExt, DiskExt, System, SystemExt};
-use rusoto_core::{Region, RusotoError, request};
-use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, Dimension, MetricDatum, PutMetricDataInput, PutMetricDataError};
+use sysinfo::{ProcessExt, System, SystemExt};
+use rusoto_core::Region;
+use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, Dimension, MetricDatum, PutMetricDataInput};
 use tokio::runtime::Runtime;
 use std::time::Instant;
 use tokio::time::{timeout, Duration, sleep};
@@ -15,9 +15,16 @@ use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 struct Config {
+    polling_interval_minutes: u64,
     region: String,
     process_checks: Vec<String>,
-    script_paths: Vec<String>,
+    script_paths: Vec<Script>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Script {
+    path: String,
+    user: String,
 }
 
 fn read_config(filename: &str) -> Result<Config, Error> {
@@ -159,9 +166,12 @@ fn read_config(filename: &str) -> Result<Config, Error> {
 //     }
 // }
 
-async fn run_script_and_get_status(script_paths: &str) -> Result<i32, std::io::Error> {
-    let output = Command::new("bash")
-        .arg(script_paths)
+async fn run_script_and_get_status(script_paths: &Script) -> Result<i32, std::io::Error> {
+    let output = Command::new("sudo")
+        .arg("-u")
+        .arg(&script_paths.user)
+        .arg("bash")
+        .arg(&script_paths.path)
         .output()
         .await?;
 
@@ -297,6 +307,7 @@ fn main() {
             Ok(config) => {
                 loop {
                 let region = &config.region;
+                let polling_interval = &config.polling_interval_minutes;
                     for filter_string in &config.process_checks {
                         let filter_string = filter_string.to_lowercase();
                     
@@ -306,9 +317,9 @@ fn main() {
                             }
                         
                     }
-                    for path in &config.script_paths {
+                    for item in &config.script_paths {
 
-                        let script_name_option = get_filename_from_path(path);    
+                        let script_name_option = get_filename_from_path(&item.path);    
 
                         match script_name_option {
                             Some(script_name) => println!("File name is {}", script_name),
@@ -317,7 +328,7 @@ fn main() {
 
                         let script_name = script_name_option.unwrap_or_else(|| "No script name found");
 
-                            match run_script_and_get_status(&path).await {
+                            match run_script_and_get_status(&item).await {
 
 
                                 Ok(status) => {
@@ -336,7 +347,7 @@ fn main() {
                             }
                     }
 
-                    tokio::time::sleep(Duration::from_secs(30 * 60)).await; // Sleep for 30 minutes
+                    tokio::time::sleep(Duration::from_secs(polling_interval * 60)).await; // Sleep for 30 minutes
                 }
             },
             Err(e) => eprintln!("Error reading config file: {}", e),

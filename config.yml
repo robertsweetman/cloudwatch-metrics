@@ -1,5 +1,11 @@
 ---
 region: EuWest2
+polling_interval_minutes: 60
 process_checks:
- - chrome
- - Terminal
+  - chrome
+  - Terminal
+script_paths:
+  - path:
+    user:
+  - path:
+    user:
