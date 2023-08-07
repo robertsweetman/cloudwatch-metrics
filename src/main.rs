@@ -9,13 +9,15 @@ use tokio::time::{timeout, Duration, sleep};
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
+use tokio::process::Command;
 use serde_yaml::Error;
-use reqwest::Client;
+use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 struct Config {
     region: String,
     process_checks: Vec<String>,
+    script_paths: Vec<String>,
 }
 
 fn read_config(filename: &str) -> Result<Config, Error> {
@@ -157,6 +159,15 @@ fn read_config(filename: &str) -> Result<Config, Error> {
 //     }
 // }
 
+async fn run_script_and_get_status(script_paths: &str) -> Result<i32, std::io::Error> {
+    let output = Command::new("bash")
+        .arg(script_paths)
+        .output()
+        .await?;
+
+    Ok(output.status.code().unwrap_or(-1))
+}
+
 async fn send_metrics_with_retries(filter_string: &str, region: &str) -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
 
@@ -244,6 +255,12 @@ async fn send_metrics_with_retries(filter_string: &str, region: &str) -> Result<
     Ok(())
 }
 
+fn get_filename_from_path(path: &str) -> Option<&str> {
+    let path = Path::new(path);
+    let script_name = path.file_stem()?;
+    script_name.to_str()
+}
+
 fn main() {
     // let sys = System::new_all();
     // let disks = parse_disk_data(&sys);
@@ -280,16 +297,45 @@ fn main() {
             Ok(config) => {
                 loop {
                 let region = &config.region;
-                for filter_string in &config.process_checks {
-                    let filter_string = filter_string.to_lowercase();
-
+                    for filter_string in &config.process_checks {
+                        let filter_string = filter_string.to_lowercase();
                     
-                        match send_metrics_with_retries(&filter_string, &region).await {
-                            Ok(_) => println!("Metrics for {} sent successfully", filter_string),
-                            Err(e) => eprintln!("Error occurred: {}", e),
-                        }
+                            match send_metrics_with_retries(&filter_string, &region).await {
+                                Ok(_) => println!("Metrics for {} sent successfully", filter_string),
+                                Err(e) => eprintln!("Error occurred: {}", e),
+                            }
                         
                     }
+                    for path in &config.script_paths {
+
+                        let script_name_option = get_filename_from_path(path);    
+
+                        match script_name_option {
+                            Some(script_name) => println!("File name is {}", script_name),
+                            None => println!("No file name found"),
+                        }
+
+                        let script_name = script_name_option.unwrap_or_else(|| "No script name found");
+
+                            match run_script_and_get_status(&path).await {
+
+
+                                Ok(status) => {
+                                    println!("Script {} ran successfully with status code {}", script_name, status);
+
+                                    match send_metrics_with_retries(
+                                        &status.to_string(),
+                                        &region,
+                                    ).await {
+                                        Ok(_) => println!("Metrics for {} sent successfully", script_name),
+                                        Err(e) => eprintln!("Error occurred: {}", e),
+
+                                    }
+                                }
+                                Err(e) => eprintln!("Error running script {}: {}", script_name, e),
+                            }
+                    }
+
                     tokio::time::sleep(Duration::from_secs(30 * 60)).await; // Sleep for 30 minutes
                 }
             },

@@ -24,19 +24,13 @@ jobs:
     - name: run build
       run: cargo build --verbose --release --target=x86_64-unknown-linux-gnu
 
-    # - name: Build Linux Release
-    #   id: linux_release
-    #   uses: actions-rs/cargo@v1.0.3
-    #   with:
-    #     command: build 
-    #     args: 
-
     - name: Create tar.gz
       run: tar -czvf rust-monitor-linux.tar.gz -C ./target/x86_64-unknown-linux-gnu/release .
 
-    - name: Upload to Workflow Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: rust-monitor-linux
-        path: ./rust-monitor-linux.tar.gz     
+    # FIXME: add this back in later - ran out of upload space
+    # - name: Upload to Workflow Artifact
+    #   uses: actions/upload-artifact@v3.1.2
+    #   with:
+    #     name: rust-monitor-linux
+    #     path: ./rust-monitor-linux.tar.gz     
 

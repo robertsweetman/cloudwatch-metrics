@@ -5,7 +5,9 @@ Relies on the fact that EC2 instances hold metadata about themselves, including 
 ## ToDo
 
 ### General
-1. GitHub action to build and push application to S3
+1. GitHub action to build 
+2. GitHub action to push application to S3
+3. FIXME: fix release.yml pipeline as it's currently broken
 2. Windows client support
 3. Figure out how to handle other collectd scripts which are getting state
 7. Tests for the Rust code
