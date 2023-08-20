@@ -257,6 +257,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cloudwatch-metrics"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "reqwest",
+ "rusoto_cloudwatch",
+ "rusoto_core",
+ "serde",
+ "serde_yaml",
+ "sysinfo",
+ "tokio",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -380,20 +394,6 @@ dependencies = [
  "libc",
  "redox_users",
  "winapi",
-]
-
-[[package]]
-name = "disk-space"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "reqwest",
- "rusoto_cloudwatch",
- "rusoto_core",
- "serde",
- "serde_yaml",
- "sysinfo",
- "tokio",
 ]
 
 [[package]]
