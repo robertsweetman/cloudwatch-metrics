@@ -4,16 +4,22 @@ Relies on the fact that EC2 instances hold metadata about themselves, including 
 
 ## ToDo
 
-### General
-1. GitHub action to build 
-2. GitHub action to push application to S3
-3. FIXME: fix release.yml pipeline as it's currently broken
-2. Windows client support
-3. Figure out how to handle other collectd scripts which are getting state
-7. Tests for the Rust code
-8. Multiple config files?
+### Bugs
+1. Fix release.yml pipeline as it's currently broken
+2. Replace rusoto crate usage with aws-sdk-rust instead
 
+### General
+
+1. GitHub action to push application to S3
+3. Windows client support
+   - Is this basically a build option?
+4. Figure out how to run scripts which are getting state
+   - Include a test for this
+5. More tests for the Rust code
+
+### Features
+1. Allow multiple config files?
 ### Ansible
 1. Add a role to deploy the binary
-2. Init scripts for Rhel 6 and systemd for Rhel 7 to start/stop service and set it to start on boot
-3. Roles to deploy the config file live with each instance type install role i.e. nomis-db, nomis-web
+2. Init scripts and systemd to start/stop service and set it to start on boot
+3. Roles to deploy the config file live with each instance type install role i.e. webserver, dbserver etc.
